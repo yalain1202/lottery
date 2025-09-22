@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽籤拉霸機</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #111827; /* 深色背景 */
+        }
+        .slot-machine {
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3), inset 0 0 15px rgba(0,0,0,0.5);
+            border: 3px solid #7f8c8d;
+        }
+        .slot-window {
+            background-color: #1a202c;
+            border: 2px solid #4a5568;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            padding: 1rem;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
+        }
+        .slot {
+            width: clamp(60px, 22vw, 100px); /* 自適應寬度 */
+            aspect-ratio: 3 / 4; /* 設定寬高比，讓高度自適應 */
+            height: auto; /* 高度自動 */
+            font-size: clamp(3rem, 12vw, 5rem); /* 自適應字體大小 */
+            font-weight: 900;
+            text-align: center;
+            color: #f1c40f; /* 金色文字 */
+            text-shadow: 0 0 5px #f1c40f, 0 0 10px #f1c40f, 0 0 20px #f39c12;
+            margin: 0 0.5rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            transition: transform 0.1s ease-in-out;
+            display: flex; /* 使用 Flexbox 來垂直置中 */
+            justify-content: center; /* 水平置中 (雖然 text-align 已經做了) */
+            align-items: center; /* 垂直置中 */
+        }
+        .spin-button {
+            background: linear-gradient(145deg, #e67e22, #d35400);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 5px 0 #8e44ad, 0 8px 10px rgba(0,0,0,0.3);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+            transform: translateY(-2px);
+        }
+        .spin-button:hover {
+            background: linear-gradient(145deg, #f39c12, #e67e22);
+            transform: translateY(-4px);
+            box-shadow: 0 7px 0 #8e44ad, 0 10px 12px rgba(0,0,0,0.4);
+        }
+        .spin-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #8e44ad;
+        }
+        .spin-button:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+            transform: translateY(0);
+            box-shadow: 0 2px 0 #34495e;
+        }
+        .timer-button {
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .timer-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+         .timer-button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen">
+
+    <div class="slot-machine w-full max-w-md md:max-w-lg mx-4">
+        <h1 class="text-3xl md:text-4xl font-bold text-white text-center mb-4 text-shadow">幸運拉霸機</h1>
+        <p class="text-gray-300 text-center mb-6">點擊按鈕抽出幸運兒！</p>
+        
+        <div id="namelist-container" class="mb-6 p-4 bg-gray-800 rounded-lg max-h-40 overflow-y-auto">
+            <h3 class="text-lg font-bold text-yellow-400 mb-2">抽獎名單</h3>
+            <div id="namelist" class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-gray-200">
+            </div>
+        </div>
+
+        <div class="slot-window mb-8">
+            <div id="slot1" class="slot">?</div>
+            <div id="slot2" class="slot">?</div>
+            <div id="slot3" class="slot">?</div>
+        </div>
+
+        <div id="result-display" class="text-center h-12 mb-2">
+             <!-- 此處留空，用於佔據版面空間 -->
+        </div>
+
+        <!-- 進度條區域 -->
+        <div id="timer-container" class="text-center my-4 hidden">
+            <div class="w-full bg-gray-700 rounded-full h-4 shadow-inner">
+                <div id="progress-bar" class="bg-green-500 h-4 rounded-full" style="width: 100%; transition: width 1s linear;"></div>
+            </div>
+            <div id="timer-controls" class="flex justify-center gap-4 mt-4">
+                <button id="resetTimerButton" class="timer-button bg-blue-500 hover:bg-blue-600">重置</button>
+                <button id="stopTimerButton" class="timer-button bg-red-500 hover:bg-red-600">停止</button>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <button id="spinButton" class="spin-button">開始抽獎</button>
+        </div>
+    </div>
+
+    <script>
+        const names = [
+            "張迦森", "梁佑豪", "蕭博升", "楊凡萱", "陳芷薰",
+            "楊璦菲", "楊瑜熙", "葉宥榛", "葉宸杋", "陳妍熙"
+        ];
+
+        const spinButton = document.getElementById('spinButton');
+        const slots = [document.getElementById('slot1'), document.getElementById('slot2'), document.getElementById('slot3')];
+        const resultDisplay = document.getElementById('result-display');
+        const namelistDiv = document.getElementById('namelist');
+        const timerContainer = document.getElementById('timer-container');
+        const progressBar = document.getElementById('progress-bar');
+        const resetTimerButton = document.getElementById('resetTimerButton');
+        const stopTimerButton = document.getElementById('stopTimerButton');
+
+        const allChars = [...new Set(names.join(''))];
+        let spinningIntervals = [];
+        let timerInterval = null;
+        let timeLeft = 60;
+
+        function initializeNamelist() {
+            namelistDiv.innerHTML = '';
+            names.forEach(name => {
+                const nameElement = document.createElement('span');
+                nameElement.textContent = name;
+                nameElement.classList.add('py-1', 'px-2', 'bg-gray-700', 'rounded');
+                namelistDiv.appendChild(nameElement);
+            });
+        }
+        
+        initializeNamelist();
+
+        function startSpinning(slot) {
+            return setInterval(() => {
+                const randomChar = allChars[Math.floor(Math.random() * allChars.length)];
+                slot.textContent = randomChar;
+                slot.style.transform = `scale(${1 + Math.random() * 0.1})`;
+            }, 80);
+        }
+
+        function stopSpinning(slot, finalChar, interval) {
+            clearInterval(interval);
+            slot.textContent = finalChar;
+            slot.style.transform = 'scale(1)';
+            slot.animate([
+                { transform: 'scale(1.3)', color: '#ffffff' },
+                { transform: 'scale(1)', color: '#f1c40f' }
+            ], {
+                duration: 300,
+                easing: 'ease-out'
+            });
+        }
+        
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        function startTimer() {
+            stopTimer(); // 確保沒有重複的計時器
+            timerContainer.classList.remove('hidden');
+            timeLeft = 60;
+
+            // 重置進度條樣式
+            progressBar.style.transition = 'none'; // 暫時移除過渡效果以便立即重置
+            progressBar.style.width = '100%';
+            progressBar.offsetHeight; // 觸發重繪，讓樣式立即生效
+            progressBar.style.transition = 'width 1s linear'; // 加回過渡效果
+            
+            progressBar.classList.remove('bg-red-500');
+            progressBar.classList.add('bg-green-500');
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const progressPercentage = Math.max(0, (timeLeft / 60) * 100);
+                progressBar.style.width = `${progressPercentage}%`;
+
+                if (timeLeft <= 0) {
+                    stopTimer();
+                    progressBar.classList.remove('bg-green-500');
+                    progressBar.classList.add('bg-red-500');
+                }
+            }, 1000);
+        }
+
+        stopTimerButton.addEventListener('click', stopTimer);
+        resetTimerButton.addEventListener('click', startTimer);
+
+        spinButton.addEventListener('click', () => {
+            if (names.length === 0) {
+                resultDisplay.innerHTML = `<p class="text-xl font-bold text-red-500">名單已空！</p>`;
+                return;
+            }
+
+            spinButton.disabled = true;
+            resultDisplay.innerHTML = ''; // 確保結果區域是空的
+            timerContainer.classList.add('hidden'); // 開始新抽獎時隱藏計時器
+
+            spinningIntervals.forEach(clearInterval);
+            spinningIntervals = [];
+
+            const winnerIndex = Math.floor(Math.random() * names.length);
+            const winnerName = names[winnerIndex];
+
+            slots.forEach((slot, index) => {
+                spinningIntervals[index] = startSpinning(slot);
+            });
+
+            winnerName.split('').forEach((char, index) => {
+                setTimeout(() => {
+                    stopSpinning(slots[index], char, spinningIntervals[index]);
+                }, 1500 + index * 1000);
+            });
+
+            setTimeout(() => {
+                // 不再顯示中獎者姓名
+                spinButton.disabled = false;
+                
+                names.splice(winnerIndex, 1);
+                initializeNamelist();
+                
+                startTimer(); // 抽獎動畫結束後啟動進度條
+
+            }, 1500 + (winnerName.length - 1) * 1000 + 500);
+        });
+    </script>
+</body>
+</html>
+
+
