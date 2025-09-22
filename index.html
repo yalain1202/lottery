@@ -115,8 +115,7 @@
             <div id="slot3" class="slot">?</div>
         </div>
 
-        <div id="result-display" class="text-center h-12 mb-2">
-             <!-- 此處留空，用於佔據版面空間 -->
+        <div id="result-display" class="text-center mb-2">
         </div>
 
         <!-- 進度條區域 -->
@@ -204,7 +203,7 @@
             progressBar.offsetHeight; // 觸發重繪，讓樣式立即生效
             progressBar.style.transition = 'width 1s linear'; // 加回過渡效果
             
-            progressBar.classList.remove('bg-red-500');
+            progressBar.classList.remove('bg-red-500', 'bg-orange-500');
             progressBar.classList.add('bg-green-500');
             
             timerInterval = setInterval(() => {
@@ -212,10 +211,20 @@
                 const progressPercentage = Math.max(0, (timeLeft / 60) * 100);
                 progressBar.style.width = `${progressPercentage}%`;
 
+                // 根據剩餘時間更新進度條顏色
+                if (timeLeft < 10) {
+                    progressBar.classList.remove('bg-green-500', 'bg-orange-500');
+                    progressBar.classList.add('bg-red-500');
+                } else if (timeLeft < 30) {
+                    progressBar.classList.remove('bg-green-500', 'bg-red-500');
+                    progressBar.classList.add('bg-orange-500');
+                } else {
+                    progressBar.classList.remove('bg-orange-500', 'bg-red-500');
+                    progressBar.classList.add('bg-green-500');
+                }
+
                 if (timeLeft <= 0) {
                     stopTimer();
-                    progressBar.classList.remove('bg-green-500');
-                    progressBar.classList.add('bg-red-500');
                 }
             }, 1000);
         }
