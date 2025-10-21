@@ -3,478 +3,470 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>抽籤拉霸機</title>
+    <title>水彩混色遊戲 (Watercolor Mixing Game)</title>
+    <!-- 載入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
+        /* 使用 Inter 字體 */
         body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #111827; /* 深色背景 */
-            overflow: hidden; /* 防止事件動畫導致滾動 */
+            font-family: 'Inter', sans-serif;
+            /* 為點擊效果增加流暢過渡 */
+            transition: all 0.2s ease-in-out;
         }
-        .slot-machine {
-            background: linear-gradient(145deg, #2c3e50, #34495e);
-            border-radius: 20px;
-            padding: 2rem 1.5rem;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3), inset 0 0 15px rgba(0,0,0,0.5);
-            border: 3px solid #7f8c8d;
-            position: relative; /* 為了讓遮罩定位 */
-        }
-        .slot-window {
-            background-color: #1a202c;
-            border: 2px solid #4a5568;
-            border-radius: 10px;
-            overflow: hidden;
+        /* 顏色方塊的基本樣式 */
+        .color-box {
+            width: 100px;
+            height: 100px;
+            border-radius: 0.75rem; /* rounded-xl */
+            border: 4px solid #f3f4f6; /* border-gray-100 */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             display: flex;
+            align-items: center;
             justify-content: center;
-            padding: 1rem;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600; /* font-semibold */
+            color: rgba(0,0,0,0.4);
         }
-        .slot {
-            width: clamp(60px, 22vw, 100px); /* 自適應寬度 */
-            aspect-ratio: 3 / 4; /* 設定寬高比，讓高度自適應 */
-            height: auto; /* 高度自動 */
-            font-size: clamp(3rem, 12vw, 5rem); /* 自適應字體大小 */
-            font-weight: 900;
-            text-align: center;
-            color: #f1c40f; /* 金色文字 */
-            text-shadow: 0 0 5px #f1c40f, 0 0 10px #f1c40f, 0 0 20px #f39c12;
-            margin: 0 0.5rem;
-            background: rgba(0,0,0,0.2);
-            border-radius: 8px;
-            transition: transform 0.1s ease-in-out;
-            display: flex; /* 使用 Flexbox 來垂直置中 */
-            justify-content: center; /* 水平置中 (雖然 text-align 已經做了) */
-            align-items: center; /* 垂直置中 */
-            position: relative; /* 為了讓 emoji 定位 */
-        }
-        .spin-button {
-            background: linear-gradient(145deg, #e67e22, #d35400);
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            border: none;
-            border-radius: 10px;
-            padding: 1rem 2rem;
+        /* 調色盤按鈕 */
+        .palette-btn {
+            width: 72px; /* w-18 */
+            height: 72px; /* h-18 */
+            border-radius: 50%; /* rounded-full */
+            border: 4px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 5px 0 #8e44ad, 0 8px 10px rgba(0,0,0,0.3);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
-            transform: translateY(-2px);
+            transition: all 0.2s ease-in-out;
         }
-        .spin-button:hover {
-            background: linear-gradient(145deg, #f39c12, #e67e22);
-            transform: translateY(-4px);
-            box-shadow: 0 7px 0 #8e44ad, 0 10px 12px rgba(0,0,0,0.4);
+        .palette-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
         }
-        .spin-button:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 0 #8e44ad;
+        /* 白色按鈕的特殊邊框 */
+        .border-gray-light {
+            border: 4px solid #e5e7eb; /* border-gray-200 */
         }
-        .spin-button:disabled {
-            background: #7f8c8d;
-            cursor: not-allowed;
-            transform: translateY(0);
-            box-shadow: 0 2px 0 #34495e;
-        }
-        
-        /* 突發事件動畫 - 直接應用於 slot */
-        @keyframes slot-shake {
-          10%, 90% { transform: translate3d(-2px, 0, 0) rotate(-1deg); }
-          20%, 80% { transform: translate3d(4px, 0, 0) rotate(1deg); }
-          30%, 50%, 70% { transform: translate3d(-8px, 0, 0) rotate(-2deg); }
-          40%, 60% { transform: translate3d(8px, 0, 0) rotate(2deg); }
-        }
-        .slot-shaking {
-            animation: slot-shake 0.4s cubic-bezier(.36,.07,.19,.97) infinite;
+        .palette-btn.selected {
+            transform: scale(0.9);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            opacity: 0.6;
         }
 
-        /* Emoji 動畫 */
-        .event-emoji {
+        /* --- 1. 新增：錯誤抖動動畫 --- */
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+          20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .shake-animation {
+          animation: shake 0.5s ease-in-out;
+        }
+
+        /* --- 2. 新增：顏色表格樣式 --- */
+        .grid-color-item {
+            width: 100%;
+            /* 1:1 比例的方形 */
+            padding-bottom: 100%; 
+            position: relative;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+        .grid-color-item .checkmark {
+            display: none; /* 預設隱藏 */
             position: absolute;
-            font-size: 3rem; /* 大一點的 emoji */
-            line-height: 1; /* 避免額外行高影響位置 */
-            transform: translate(-50%, -50%); /* 基準點置中 */
-            opacity: 0; /* 預設隱藏 */
-            animation: emoji-float-in-out 3s ease-in-out forwards; /* 動畫持續 3 秒 */
-            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.7)); /* 發光效果 */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem; /* 放大打勾符號 */
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
-
-        @keyframes emoji-float-in-out {
-            0% { opacity: 0; transform: translate(-50%, 100%) scale(0.5); } /* 從下方進入 */
-            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } /* 放大到中心 */
-            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } /* 保持在中心 */
-            100% { opacity: 0; transform: translate(-50%, -200%) scale(0.5); } /* 向上飛出 */
+        .grid-color-item.completed .checkmark {
+            display: block; /* 完成時顯示 */
         }
-        
-        /* 每個字元有自己的 emoji 動畫 */
-        .slot:nth-child(1) .event-emoji { animation-delay: 0s; }
-        .slot:nth-child(2) .event-emoji { animation-delay: 0.2s; }
-        .slot:nth-child(3) .event-emoji { animation-delay: 0.4s; }
-
-        /* --- 10種新動畫 --- */
-        #event-overlay { pointer-events: none; } /* 讓動畫層不阻擋點擊 */
-
-        @keyframes anim-run-fullscreen { /* 全螢幕小人亂跑 */
-            0% { transform: translate(-50vw, -50vh) scaleX(1); }
-            25% { transform: translate(50vw, -30vh) scaleX(-1); }
-            50% { transform: translate(50vw, 50vh) scaleX(-1); }
-            75% { transform: translate(-50vw, 30vh) scaleX(1); }
-            100% { transform: translate(-50vw, -50vh) scaleX(1); }
-        }
-        .event-run-fullscreen { animation: anim-run-fullscreen 2s linear infinite; }
-
-
-        @keyframes anim-hack {
-            0%, 100% { transform: translate(0, 0); }
-            10% { transform: translate(-5px, -5px); }
-            20% { transform: translate(5px, 5px); }
-            30% { transform: translate(-5px, 5px); }
-            40% { transform: translate(5px, -5px); }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        .event-hack { animation: anim-hack 0.2s linear infinite; }
-
-        @keyframes anim-ufo {
-            0% { transform: translate(-60vw, -40vh) rotate(-30deg); }
-            100% { transform: translate(60vw, 40vh) rotate(30deg); }
-        }
-        .event-ufo { animation: anim-ufo 3s linear forwards; }
-
-        @keyframes anim-wind {
-            0% { transform: translateX(-100px) rotate(0deg); }
-            50% { transform: translateX(100px) rotate(180deg); }
-            100% { transform: translateX(-100px) rotate(360deg); }
-        }
-        .event-wind { animation: anim-wind 1.5s ease-in-out infinite; }
-        
-        @keyframes anim-robot {
-            0% { opacity: 0; }
-            49% { opacity: 0; }
-            50% { opacity: 1; transform: scale(1.1); }
-            100% { opacity: 1; }
-        }
-        .event-robot { animation: anim-robot 0.5s ease-in-out infinite; }
-        
-        @keyframes anim-bomb {
-            0% { transform: scale(0.5); opacity: 0.5; }
-            70% { transform: scale(50); opacity: 1; }
-            100% { transform: scale(50); opacity: 0; }
-        }
-        .event-bomb { animation: anim-bomb 2.8s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
-        /* 炸彈閃光 */
-        .event-bomb::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: white;
-            opacity: 0;
-            animation: anim-bomb-flash 2.8s ease-out forwards;
-        }
-        @keyframes anim-bomb-flash {
-            65% { opacity: 0; }
-            70% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-
-        @keyframes anim-lightning {
-            0%, 100% { opacity: 1; transform: scale(1.2); }
-            50% { opacity: 0.2; transform: scale(1); }
-        }
-        .event-lightning { animation: anim-lightning 0.3s ease infinite; }
-
-        @keyframes anim-swirl {
-            0% { transform: rotate(0deg) scale(0.8); }
-            100% { transform: rotate(1080deg) scale(1.5); }
-        }
-        .event-swirl { animation: anim-swirl 2s linear infinite; }
-        
-        @keyframes anim-money {
-            0% { transform: translateY(-50vh); opacity: 0; }
-            20% { opacity: 1; }
-            80% { opacity: 1; }
-            100% { transform: translateY(50vh); opacity: 0; }
-        }
-        .event-money { animation: anim-money 1.5s ease-out infinite; }
-
-        /* --- 新增的 Emoji 搗蛋動畫 --- */
-        .chaos-emoji {
-            position: absolute;
-            font-size: 2.5rem; /* Emoji 大小 */
-            opacity: 0;
-            animation: anim-emoji-bounce 3s ease-out forwards;
-            z-index: 20;
-            will-change: transform, opacity;
-        }
-        @keyframes anim-emoji-bounce {
-            0% { opacity: 0; transform: translate(0, 50px) scale(0.5); }
-            20% { opacity: 1; transform: translate(-20px, -30px) scale(1.2) rotate(30deg); }
-            40% { opacity: 1; transform: translate(20px, -40px) scale(1) rotate(-20deg); }
-            60% { opacity: 1; transform: translate(-10px, -20px) scale(1.1) rotate(10deg); }
-            80% { opacity: 1; transform: translate(15px, -35px) scale(1) rotate(-5deg); }
-            98% { opacity: 1; }
-            100% { opacity: 0; transform: translate(0, -100px) scale(0.5) rotate(0deg); }
-        }
-
     </style>
 </head>
-<body class="bg-gray-900 flex items-center justify-center min-h-screen">
+<body class="bg-blue-50 flex items-center justify-center min-h-screen p-4">
 
-    <div class="slot-machine w-full max-w-md md:max-w-lg mx-4">
-        <h1 class="text-3xl md:text-4xl font-bold text-white text-center mb-4 text-shadow">幸運拉霸機</h1>
-        <p class="text-gray-300 text-center mb-6">點擊按鈕抽出幸運兒！</p>
+    <!-- 
+      (版面修改)
+      遊戲主容器，改為 grid 佈局 
+      - max-w-lg (窄) 改為 max-w-6xl (寬)
+      - 新增 lg:grid lg:grid-cols-3 lg:gap-8 
+    -->
+    <div id="game-container" class="w-full max-w-6xl mx-auto p-6 md:p-8 bg-white rounded-2xl shadow-2xl lg:grid lg:grid-cols-3 lg:gap-8">
         
-        <div id="namelist-container" class="mb-6 p-4 bg-gray-800 rounded-lg max-h-40 overflow-y-auto">
-            <h3 class="text-lg font-bold text-yellow-400 mb-2">抽獎名單</h3>
-            <div id="namelist" class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-gray-200">
+        <!-- (版面修改) 左欄：顏色表格 -->
+        <div class="lg:col-span-1 mb-8 lg:mb-0">
+            <!-- --- 3. 5x5 顏色表格 --- -->
+            <p class="text-center font-semibold text-gray-600 mb-4 text-2xl">我的顏色表</p>
+            <div id="color-grid" class="grid grid-cols-5 gap-2 p-4 bg-gray-100 rounded-lg">
+                <!-- 25 個顏色格子將由 JS 動態生成 -->
             </div>
         </div>
 
-        <div class="slot-window mb-6"> <!-- 原本是 mb-8 -->
-            <div id="slot1" class="slot">?</div>
-            <div id="slot2" class="slot">?</div>
-            <div id="slot3" class="slot">?</div>
-        </div>
+        <!-- (版面修改) 右欄：遊戲主要內容 -->
+        <div class="lg:col-span-2">
+            
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-4">
+                水彩混色遊戲
+            </h1>
+            
+            <p class="text-xl text-center text-gray-700 mb-6">
+                請混合出： 
+                <span id="target-name" class="font-bold text-blue-600">...</span>
+            </p>
 
-        <div id="result-display" class="text-center mb-6"> <!-- 移除 min-height, 將間距 mb-6 移到這裡 -->
-            <!-- 突發事件的文字將顯示在這裡 --></div>
+            <!-- 顏色顯示區 -->
+            <div class="mb-8">
+                <!-- 目標 -->
+                <div class="flex flex-col items-center mb-6">
+                    <p class="mt-2 text-lg font-semibold text-gray-600 mb-2">目標顏色</p>
+                    <div id="target-color" class="color-box w-32 h-32 md:w-36 md:h-36" style="background-color: #eee;"></div>
+                </div>
 
-        <div class="text-center"> <!-- 移除 mt-5 -->
-            <button id="spinButton" class="spin-button">開始抽獎</button>
-        </div>
+                <!-- 混合區 -->
+                <div class="flex items-center justify-center space-x-2 md:space-x-4">
+                    <div id="mix-slot-1" class="color-box">顏色1</div>
+                    <span class="text-3xl font-light text-gray-500">+</span>
+                    <div id="mix-slot-2" class="color-box">顏色2</div>
+                    <span class="text-3xl font-light text-gray-500">=</span>
+                    <div id="mixed-color" class="color-box">結果</div>
+                </div>
+            </div>
 
-        <!-- 全螢幕動畫遮罩層 (已移到 body 層級) -->
+            <!-- 調色盤 -->
+            <div class="mb-8">
+                <p class="text-center font-semibold text-gray-600 mb-4">選擇兩種顏色</p>
+                <div id="palette-container" class="flex justify-center flex-wrap gap-4">
+                    <!-- 調色盤按鈕將由 JS 動態生成 -->
+                </div>
+            </div>
+
+
+            <!-- (修改) 刪除按鈕區 -->
+
+
+            <!-- 回饋訊息 -->
+            <p id="feedback" class="text-center text-lg font-medium mt-6 h-8"></p>
+        
+        </div> <!-- 結束右欄 -->
+
     </div>
-
-    <!-- 全螢幕動畫遮罩層 (移到這裡，並改為 fixed) -->
-    <div id="event-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center text-center p-4 hidden z-50 overflow-hidden">
-        <div id="event-icon" class="text-9xl relative"></div> <!-- 圖標放大 -->
-        <h2 id="event-text" class="text-4xl font-bold text-red-400 mt-6"></h2>
-        <p id="event-subtext" class="text-yellow-300 text-2xl mt-3"></p>
-    </div>
-
 
     <script>
-        const initialNames = [
-            "張迦森", "梁佑豪", "蕭博升", "楊凡萱", "陳芷薰",
-            "楊璦菲", "楊瑜熙", "葉宥榛", "葉宸杋", "陳妍熙"
-        ];
-        // 複製一份作為可變動的目前名單
-        let names = [...initialNames];
-        // 複製一份作為「最後一人」事件觸發時的抽獎池
-        const masterNameList = [...initialNames];
+        // --- 1. 定義顏色 (重構) ---
         
-        // 10種突發事件 (更新動畫)
-        const events = [
-            { icon: "🏃", text: "小人亂跑！結果被換掉了！", animation: "event-run-fullscreen" }, // <-- 更新動畫
-            { icon: "💻", text: "駭客入侵！系統重選！", animation: "event-hack" },
-            { icon: "🛸", text: "UFO 飛過，命運被改變了！", animation: "event-ufo" },
-            { icon: "💨", text: "一陣怪風吹走了結果！", animation: "event-wind" },
-            { icon: "🤪", text: "Emoji 搗蛋！結果被換掉了！", animation: "event-emoji-chaos" }, // <-- 新事件
-            { icon: "🤖", text: "AI 覺醒！它有自己的想法... ", animation: "event-robot" },
-            { icon: "💣", text: "糟糕！炸彈！結果飛了！", animation: "event-bomb" },
-            { icon: "⚡", text: "一道閃電劈中拉霸機！", animation: "event-lightning" },
-            { icon: "🌀", text: "時空漩渦！命運重置！", animation: "event-swirl" },
-            { icon: "💸", text: "有人灑錢！結果被買通了！", animation: "event-money" }
-        ];
+        // 25 種顏色的主資料庫
+        const allColorsData = {
+            // 基礎調色盤 (8)
+            "Red":    { zh: "紅色", css: "rgb(239, 68, 68)", recipe: null },
+            "Yellow": { zh: "黃色", css: "rgb(234, 179, 8)", recipe: null },
+            "Blue":   { zh: "藍色", css: "rgb(59, 130, 246)", recipe: null },
+            "White":  { zh: "白色", css: "rgb(255, 255, 255)", recipe: null, border: true },
+            "Black":  { zh: "黑色", css: "rgb(17, 24, 39)", recipe: null },
+            "Orange": { zh: "橘色", css: "rgb(249, 115, 22)", recipe: ["Red", "Yellow"] },
+            "Green":  { zh: "綠色", css: "rgb(34, 197, 94)", recipe: ["Blue", "Yellow"] },
+            "Purple": { zh: "紫色", css: "rgb(139, 92, 246)", recipe: ["Red", "Blue"] },
+            
+            // 目標顏色 (17)
+            "Pink":   { zh: "粉紅色", css: "rgb(244, 114, 182)", recipe: ["Red", "White"] },
+            "Gray":   { zh: "灰色", css: "rgb(156, 163, 175)", recipe: ["Black", "White"] },
+            "Light Blue": { zh: "淺藍色", css: "rgb(147, 197, 253)", recipe: ["Blue", "White"] },
+            "Light Yellow": { zh: "淺黃色", css: "rgb(254, 240, 138)", recipe: ["Yellow", "White"] },
+            "Maroon": { zh: "栗色", css: "rgb(159, 18, 57)", recipe: ["Red", "Black"] },
+            "Navy":   { zh: "深藍色", css: "rgb(30, 58, 138)", recipe: ["Blue", "Black"] },
+            "Olive":  { zh: "橄欖綠", css: "rgb(101, 116, 32)", recipe: ["Yellow", "Black"] }, // lime-700
+            "Vermilion": { zh: "朱紅色", css: "rgb(249, 115, 22)", recipe: ["Red", "Orange"] }, // orange-500
+            "Amber":  { zh: "琥珀色", css: "rgb(245, 158, 11)", recipe: ["Yellow", "Orange"] }, // amber-500
+            "Chartreuse": { zh: "黃綠色", css: "rgb(132, 204, 22)", recipe: ["Yellow", "Green"] }, // lime-500
+            "Teal":   { zh: "藍綠色", css: "rgb(20, 184, 166)", recipe: ["Blue", "Green"] }, // teal-500
+            "Indigo": { zh: "靛藍色", css: "rgb(79, 70, 229)", recipe: ["Blue", "Purple"] }, // indigo-600
+            "Magenta":{ zh: "洋紅色", css: "rgb(219, 39, 119)", recipe: ["Red", "Purple"] }, // pink-600
+            "Peach":  { zh: "桃色", css: "rgb(253, 186, 116)", recipe: ["Orange", "White"] }, // orange-300
+            "Mint":   { zh: "薄荷綠", css: "rgb(110, 231, 183)", recipe: ["Green", "White"] }, // green-300
+            "Lavender":{ zh: "薰衣草紫", css: "rgb(196, 181, 253)", recipe: ["Purple", "White"] }, // violet-300
+            "Brown":  { zh: "棕色", css: "rgb(120, 53, 15)", recipe: ["Orange", "Black"] } // orange-900
+        };
 
-        const spinButton = document.getElementById('spinButton');
-        const slots = [document.getElementById('slot1'), document.getElementById('slot2'), document.getElementById('slot3')];
-        const resultDisplay = document.getElementById('result-display');
-        const namelistDiv = document.getElementById('namelist');
+        // 調色盤上的顏色名稱
+        const paletteColorNames = ["Red", "Yellow", "Blue", "White", "Black", "Orange", "Green", "Purple"];
         
-        // 取得動畫遮罩層的元素
-        const eventOverlay = document.getElementById('event-overlay');
-        const eventIcon = document.getElementById('event-icon');
-        const eventText = document.getElementById('event-text');
-        const eventSubtext = document.getElementById('event-subtext');
+        // 關卡的目標顏色名稱 (所有非調色盤上的顏色)
+        const targetColorNames = Object.keys(allColorsData).filter(name => 
+            allColorsData[name].recipe !== null && !paletteColorNames.includes(name)
+        );
+        // (修正：Orange, Green, Purple 也在調色盤上，但也需要被混合出來)
+        const targetColorNames_final = Object.keys(allColorsData).filter(name => 
+            allColorsData[name].recipe !== null
+        ); // 總共 17+3 = 20 個目標色 (17個獨特的 + 3個在調色盤上的)
+        
+        // 建立混色配方表
+        const mixRecipes = {};
+        Object.keys(allColorsData).forEach(name => {
+            const color = allColorsData[name];
+            if (color.recipe) {
+                const key = color.recipe.slice().sort().join('-'); // e.g., "Red-Yellow"
+                mixRecipes[key] = name; // e.g., "Orange"
+            }
+        });
 
-        const allChars = [...new Set(masterNameList.join(''))];
-        let spinningIntervals = [];
 
-        function initializeNamelist() {
-            namelistDiv.innerHTML = '';
-            names.forEach(name => {
-                const nameElement = document.createElement('span');
-                nameElement.textContent = name;
-                nameElement.classList.add('py-1', 'px-2', 'bg-gray-700', 'rounded');
-                namelistDiv.appendChild(nameElement);
-            });
+        // --- 2. 取得 DOM 元素 ---
+        const gameContainer = document.getElementById('game-container');
+        const targetNameEl = document.getElementById('target-name');
+        const targetColorEl = document.getElementById('target-color');
+        const mixSlot1El = document.getElementById('mix-slot-1');
+        const mixSlot2El = document.getElementById('mix-slot-2');
+        const mixedColorEl = document.getElementById('mixed-color');
+        const paletteContainer = document.getElementById('palette-container');
+        const colorGridEl = document.getElementById('color-grid'); 
+        
+        // (修改) 刪除按鈕元素
+        const feedbackEl = document.getElementById('feedback');
+
+        // --- 3. 遊戲狀態 ---
+        let currentTargetName = null; // e.g., "Orange"
+        let currentTargetData = null; // e.g., { zh: "橘色", ... }
+        let selectedColor1 = null;
+        let selectedColor2 = null;
+        let isChecking = false; // (新增) 狀態鎖，防止重複觸發
+        // 儲存已完成的顏色
+        let completedColors = new Set(paletteColorNames); // 調色盤顏色預設為完成
+
+        // --- 4. 核心功能函式 ---
+
+        /** (新增) 唸出英文 */
+        function speak(text) {
+            // (新增) 如果沒有文字，就不發音
+            if (!text) return;
+
+            // 停止任何正在播放的語音
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US'; // 確保使用英文發音
+            utterance.rate = 0.8; // (修改) 稍微放慢語速
+            window.speechSynthesis.speak(utterance);
+        }
+
+        /** 產生調色盤按鈕 */
+        function createPalette() {
+            paletteContainer.innerHTML = ''; // 清空
+            for (const name of paletteColorNames) {
+                const color = allColorsData[name];
+                const btn = document.createElement('button');
+                btn.className = 'palette-btn';
+                btn.style.backgroundColor = color.css;
+                btn.dataset.colorName = name; // 儲存顏色名稱
+                btn.setAttribute('aria-label', `${color.zh} (${name})`); // 輔助功能
+
+                if (color.border) {
+                    btn.classList.add('border-gray-light');
+                }
+                
+                btn.addEventListener('click', () => handlePaletteClick(name));
+                // (新增) 滑鼠移入時唸出顏色
+                btn.addEventListener('mouseenter', () => speak(name));
+                paletteContainer.appendChild(btn);
+            }
+        }
+
+        /** 產生顏色表格 */
+        function createColorGrid() {
+            colorGridEl.innerHTML = '';
+            for (const name in allColorsData) {
+                const color = allColorsData[name];
+                
+                const item = document.createElement('div');
+                item.id = `grid-color-${name}`;
+                item.className = 'grid-color-item';
+                item.style.backgroundColor = color.css;
+                item.title = `${name} (${color.zh})`;
+
+                const check = document.createElement('span');
+                check.className = 'checkmark';
+                check.textContent = '✓';
+                item.appendChild(check);
+
+                if (completedColors.has(name)) {
+                    item.classList.add('completed');
+                }
+                
+                colorGridEl.appendChild(item);
+            }
+        }
+
+        /** 標記顏色為已完成 */
+        function markColorAsCompleted(colorName) {
+            completedColors.add(colorName);
+            const el = document.getElementById(`grid-color-${colorName}`);
+            if (el) {
+                el.classList.add('completed');
+            }
         }
         
-        initializeNamelist();
-
-        function startSpinning(slot) {
-            return setInterval(() => {
-                const randomChar = allChars[Math.floor(Math.random() * allChars.length)];
-                slot.textContent = randomChar;
-                slot.style.transform = `scale(${1 + Math.random() * 0.1})`;
-            }, 80);
-        }
-
-        function stopSpinning(slot, finalChar, interval) {
-            clearInterval(interval);
-            slot.textContent = finalChar;
-            slot.style.transform = 'scale(1)';
-            slot.animate([
-                { transform: 'scale(1.3)', color: '#ffffff' },
-                { transform: 'scale(1)', color: '#f1c40f' }
-            ], {
-                duration: 300,
-                easing: 'ease-out'
-            });
-        }
-        
-        // 重新設計的 spin 函數，回傳一個 Promise
-        function runSpin(winnerName, baseSpinTime) {
-            return new Promise(resolve => {
-                const chars = winnerName.split('');
-                slots.forEach((slot, index) => {
-                    spinningIntervals[index] = startSpinning(slot);
-                });
-
-                let lastStop = 0;
-                chars.forEach((char, index) => {
-                    const stopDelay = baseSpinTime + index * 1000;
-                    setTimeout(() => {
-                        stopSpinning(slots[index], char, spinningIntervals[index]);
-                    }, stopDelay);
-                    lastStop = stopDelay;
-                });
-
-                // 解析 Promise，在最後一個字停止後
-                setTimeout(resolve, lastStop + 500); // 500ms 緩衝
-            });
-        }
-
-        // 使用 async/await 讓邏輯更清晰
-        spinButton.addEventListener('click', async () => {
-            if (names.length === 0) {
-                // 如果名單空了，提供一個重置選項
-                resultDisplay.innerHTML = `
-                    <p class="text-xl font-bold text-red-500">名單已空！</p>
-                    <button id="reset-list-button" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">重新載入名單</button>
-                `;
-                document.getElementById('reset-list-button').addEventListener('click', () => {
-                    names = [...masterNameList];
-                    initializeNamelist();
-                    resultDisplay.innerHTML = '';
-                });
+        /** 處理調色盤點擊 (修改) */
+        function handlePaletteClick(colorName) {
+            // 如果正在檢查答案（例如：答錯等待重置時），不允許點擊
+            if (isChecking) return;
+            
+            // 檢查是否已經選滿
+            if (selectedColor1 && selectedColor2) {
                 return;
             }
 
-            spinButton.disabled = true;
-            resultDisplay.innerHTML = '';
-            spinningIntervals.forEach(clearInterval);
-            spinningIntervals = [];
-
-            // 1. 抽出第一位 "可能的" 中獎者
-            const firstWinnerIndex = Math.floor(Math.random() * names.length);
-            const firstWinnerName = names[firstWinnerIndex];
+            speak(colorName); // (新增) 點擊時唸出顏色
             
-            // 等待第一次轉動動畫跑完
-            await runSpin(firstWinnerName, 1500);
+            const color = allColorsData[colorName];
 
-            let finalWinnerIndex; // 最終要從 'names' 陣列中移除的索引
-            let finalWinnerName;  // 最終顯示的名字
-            let newWinnerIndexInNames = firstWinnerIndex; // 預設
-
-            // 2. 命運的抉擇... 50% 機率
-            if (Math.random() < 0.5) { 
-                // 觸發突發事件！
-                const randomEvent = events[Math.floor(Math.random() * events.length)];
+            if (!selectedColor1) {
+                selectedColor1 = colorName;
+                mixSlot1El.style.backgroundColor = color.css;
+                mixSlot1El.textContent = '';
+                mixSlot1El.onmouseenter = () => speak(selectedColor1); // (新增)
+            } else if (!selectedColor2) {
+                selectedColor2 = colorName;
+                mixSlot2El.style.backgroundColor = color.css;
+                mixSlot2El.textContent = '';
+                mixSlot2El.onmouseenter = () => speak(selectedColor2); // (新增)
                 
-                // 3. 決定新的中獎者 (先決定好)
-                if (names.length > 1) {
-                    while (newWinnerIndexInNames === firstWinnerIndex) {
-                        newWinnerIndexInNames = Math.floor(Math.random() * names.length);
-                    }
-                    finalWinnerName = names[newWinnerIndexInNames];
-                    finalWinnerIndex = newWinnerIndexInNames;
-                } else {
-                    let tempWinner = firstWinnerName;
-                    while (tempWinner === firstWinnerName) {
-                        tempWinner = masterNameList[Math.floor(Math.random() * masterNameList.length)];
-                    }
-                    finalWinnerName = tempWinner;
-                    finalWinnerIndex = firstWinnerIndex; 
-                }
-
-                // 4. 根據事件類型執行不同動畫
-                if (randomEvent.animation === "event-emoji-chaos") {
-                    // --- 特殊事件：Emoji 搗蛋 (無遮罩) ---
-                    resultDisplay.innerHTML = `
-                        <h2 class="text-2xl font-bold text-red-400">${randomEvent.text}</h2>
-                        <p class="text-yellow-300 text-lg mt-2">...結果正在改變...</p>
-                    `;
-                    
-                    const chaosEmojis = ["🏃", "💣", "⚡", "🛸", "🌀", "💸", "🤖", "✨", "💨", "💻", "🤪", "👻"];
-                    slots.forEach(slot => {
-                        // Ghat 每個 slot 產生 4-6 個 emoji
-                        for (let i = 0; i < Math.floor(Math.random() * 3) + 4; i++) {
-                            const emojiSpan = document.createElement('span');
-                            emojiSpan.classList.add('chaos-emoji');
-                            emojiSpan.textContent = chaosEmojis[Math.floor(Math.random() * chaosEmojis.length)];
-                            // 隨機初始位置
-                            emojiSpan.style.left = `${Math.random() * 80 + 10}%`; // 10% to 90%
-                            emojiSpan.style.animationDelay = `${Math.random() * 0.5}s`;
-                            slot.appendChild(emojiSpan);
-                        }
-                    });
-
-                    // 等待 3 秒動畫
-                    await new Promise(r => setTimeout(r, 3000));
-
-                    // 清理
-                    slots.forEach(slot => {
-                        slot.querySelectorAll('.chaos-emoji').forEach(e => e.remove());
-                    });
-                    resultDisplay.innerHTML = '';
-
-                } else {
-                    // --- 標準事件：全螢幕遮罩 ---
-                    eventIcon.textContent = randomEvent.icon;
-                    eventIcon.className = 'text-9xl relative ' + randomEvent.animation; // 應用獨特動畫
-                    eventText.textContent = randomEvent.text;
-                    eventSubtext.textContent = "...結果正在改變...";
-                    eventOverlay.classList.remove('hidden');
-
-                    // 等待 3 秒鐘讓大家看動畫
-                    await new Promise(r => setTimeout(r, 3000));
-
-                    // 隱藏動畫
-                    eventOverlay.classList.add('hidden');
-                    eventIcon.className = 'text-9xl relative'; // 重置動畫
-                }
-                
-                // 5. 直接顯示新結果 (Slam 特效)
-                const newChars = finalWinnerName.split('');
-                slots.forEach((slot, index) => {
-                    const char = newChars[index] || ' ';
-                    slot.textContent = char;
-                    slot.style.transform = 'scale(1)';
-                    slot.animate([
-                        { transform: 'scale(1.5)', color: '#ffffff', textShadow: '0 0 10px #fff' },
-                        { transform: 'scale(1)', color: '#f1c40f', textShadow: '0 0 5px #f1c40f, 0 0 10px #f1c40f, 0 0 20px #f39c12' }
-                    ], {
-                        duration: 400,
-                        easing: 'ease-out'
-                    });
-                });
-
-            } else {
-                // 沒觸發事件，正常結束
-                finalWinnerIndex = firstWinnerIndex;
+                showMixedColor();
+                checkGuess(); // (修改) 選完第二個顏色立刻檢查
             }
             
-            // 6. 收尾 (移除最終確定的中獎者)
-            names.splice(finalWinnerIndex, 1);
-            initializeNamelist();
-            spinButton.disabled = false;
-        });
+            updatePaletteButtons();
+        }
+
+        /** 更新調色盤按鈕的選中狀態 */
+        function updatePaletteButtons() {
+            const buttons = paletteContainer.querySelectorAll('.palette-btn');
+            buttons.forEach(btn => {
+                const name = btn.dataset.colorName;
+                if (name === selectedColor1 || name === selectedColor2) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+        }
+
+        /** 顯示混合結果 */
+        function showMixedColor() {
+            if (!selectedColor1 || !selectedColor2) return;
+
+            const key = [selectedColor1, selectedColor2].slice().sort().join('-');
+            const resultName = mixRecipes[key];
+
+            if (resultName) {
+                const resultColor = allColorsData[resultName];
+                mixedColorEl.style.backgroundColor = resultColor.css;
+                mixedColorEl.textContent = '';
+                speak(resultName); // (修改) 立即唸出混合結果
+                mixedColorEl.onmouseenter = () => speak(resultName); // (新增)
+            } else {
+                mixedColorEl.style.backgroundColor = '#eee';
+                mixedColorEl.textContent = '?';
+                mixedColorEl.onmouseenter = null; // (新增)
+            }
+        }
+
+        /** 清除混合區 */
+        function resetMix() {
+            selectedColor1 = null;
+            selectedColor2 = null;
+            
+            mixSlot1El.style.backgroundColor = '#eee';
+            mixSlot1El.textContent = '顏色1';
+            mixSlot1El.onmouseenter = null; // (新增)
+            mixSlot2El.style.backgroundColor = '#eee';
+            mixSlot2El.textContent = '顏色2';
+            mixSlot2El.onmouseenter = null; // (新增)
+            mixedColorEl.style.backgroundColor = '#eee';
+            mixedColorEl.textContent = '結果';
+            mixedColorEl.onmouseenter = null; // (新增)
+            
+            feedbackEl.textContent = '';
+            feedbackEl.className = 'text-center text-lg font-medium mt-6 h-8';
+            
+            updatePaletteButtons();
+        }
+
+        /** 載入新關卡 (修改) */
+        function loadNewLevel() {
+            // (修改) 從 targetColorNames_final 隨機選一個
+            const randomIndex = Math.floor(Math.random() * targetColorNames_final.length);
+            currentTargetName = targetColorNames_final[randomIndex];
+            currentTargetData = allColorsData[currentTargetName];
+            
+            // 更新目標名稱 (英文 + 中文)
+            targetNameEl.textContent = `${currentTargetName} (${currentTargetData.zh})`;
+            // 更新目標顏色
+            targetColorEl.style.backgroundColor = currentTargetData.css;
+            // (新增) 滑鼠移入目標顏色時發音
+            targetColorEl.onmouseenter = () => speak(currentTargetName);
+
+            speak(currentTargetName); // (新增) 唸出新目標的英文
+            
+            resetMix();
+        }
+
+        /** 檢查答案 (大幅修改) */
+        function checkGuess() {
+            // 進入檢查狀態
+            isChecking = true; 
+
+            const userRecipeKey = [selectedColor1, selectedColor2].slice().sort().join('-');
+            const targetRecipeKey = currentTargetData.recipe.slice().sort().join('-');
+
+            if (userRecipeKey === targetRecipeKey) {
+                // --- 答對了 ---
+                feedbackEl.textContent = `答對了！${selectedColor1} + ${selectedColor2} = ${currentTargetName}`;
+                feedbackEl.className = 'text-center text-lg font-medium mt-6 h-8 text-green-600';
+                
+                // speak(`Correct!`); // (修改) 移除
+
+                // 標記為已完成
+                markColorAsCompleted(currentTargetName);
+                
+                // 1.5 秒後自動跳到下一題
+                setTimeout(() => {
+                    loadNewLevel();
+                    isChecking = false; // 載入新關卡後解除鎖定
+                }, 1500);
+
+            } else {
+                // --- 答錯了 ---
+                feedbackEl.textContent = '不對喔，再試試看。 (Not quite, try again!)';
+                feedbackEl.className = 'text-center text-lg font-medium mt-6 h-8 text-red-600';
+                
+                // speak(`Try again.`); // (修改) 移除
+
+                // 觸發抖動
+                gameContainer.classList.add('shake-animation');
+                
+                // 500ms 後移除動畫 class
+                setTimeout(() => {
+                    gameContainer.classList.remove('shake-animation');
+                }, 500);
+
+                // (新增) 1.5秒後自動清除，讓學生再試一次
+                setTimeout(() => {
+                    resetMix();
+                    isChecking = false; // 重設後解除鎖定
+                }, 1500);
+            }
+        }
+
+        // --- 5. 綁定事件 ---
+        // (修改) 刪除所有按鈕事件綁定
+
+        // --- 6. 遊戲初始化 ---
+        createPalette();
+        createColorGrid(); // 建立表格
+        loadNewLevel();
+
     </script>
 </body>
 </html>
