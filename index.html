@@ -233,16 +233,16 @@
             </div>
         </div>
 
-        <div class="slot-window mb-8">
+        <div class="slot-window mb-6"> <!-- 原本是 mb-8 -->
             <div id="slot1" class="slot">?</div>
             <div id="slot2" class="slot">?</div>
             <div id="slot3" class="slot">?</div>
         </div>
 
-        <div id="result-display" class="text-center" style="min-height: 120px;">
+        <div id="result-display" class="text-center mb-6"> <!-- 移除 min-height, 將間距 mb-6 移到這裡 -->
             <!-- 突發事件的文字將顯示在這裡 --></div>
 
-        <div class="text-center">
+        <div class="text-center"> <!-- 移除 mt-5 -->
             <button id="spinButton" class="spin-button">開始抽獎</button>
         </div>
 
@@ -478,5 +478,7 @@
     </script>
 </body>
 </html>
+
+
 
 
