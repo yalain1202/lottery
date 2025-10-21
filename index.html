@@ -12,6 +12,7 @@
         body {
             font-family: 'Noto Sans TC', sans-serif;
             background-color: #111827; /* 深色背景 */
+            overflow: hidden; /* 防止事件動畫導致滾動 */
         }
         .slot-machine {
             background: linear-gradient(145deg, #2c3e50, #34495e);
@@ -19,6 +20,7 @@
             padding: 2rem 1.5rem;
             box-shadow: 0 10px 20px rgba(0,0,0,0.3), inset 0 0 15px rgba(0,0,0,0.5);
             border: 3px solid #7f8c8d;
+            position: relative; /* 為了讓遮罩定位 */
         }
         .slot-window {
             background-color: #1a202c;
@@ -46,6 +48,7 @@
             display: flex; /* 使用 Flexbox 來垂直置中 */
             justify-content: center; /* 水平置中 (雖然 text-align 已經做了) */
             align-items: center; /* 垂直置中 */
+            position: relative; /* 為了讓 emoji 定位 */
         }
         .spin-button {
             background: linear-gradient(145deg, #e67e22, #d35400);
@@ -76,7 +79,146 @@
             transform: translateY(0);
             box-shadow: 0 2px 0 #34495e;
         }
-        /* .timer-button 樣式已移除 */
+        
+        /* 突發事件動畫 - 直接應用於 slot */
+        @keyframes slot-shake {
+          10%, 90% { transform: translate3d(-2px, 0, 0) rotate(-1deg); }
+          20%, 80% { transform: translate3d(4px, 0, 0) rotate(1deg); }
+          30%, 50%, 70% { transform: translate3d(-8px, 0, 0) rotate(-2deg); }
+          40%, 60% { transform: translate3d(8px, 0, 0) rotate(2deg); }
+        }
+        .slot-shaking {
+            animation: slot-shake 0.4s cubic-bezier(.36,.07,.19,.97) infinite;
+        }
+
+        /* Emoji 動畫 */
+        .event-emoji {
+            position: absolute;
+            font-size: 3rem; /* 大一點的 emoji */
+            line-height: 1; /* 避免額外行高影響位置 */
+            transform: translate(-50%, -50%); /* 基準點置中 */
+            opacity: 0; /* 預設隱藏 */
+            animation: emoji-float-in-out 3s ease-in-out forwards; /* 動畫持續 3 秒 */
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.7)); /* 發光效果 */
+        }
+
+        @keyframes emoji-float-in-out {
+            0% { opacity: 0; transform: translate(-50%, 100%) scale(0.5); } /* 從下方進入 */
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } /* 放大到中心 */
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } /* 保持在中心 */
+            100% { opacity: 0; transform: translate(-50%, -200%) scale(0.5); } /* 向上飛出 */
+        }
+        
+        /* 每個字元有自己的 emoji 動畫 */
+        .slot:nth-child(1) .event-emoji { animation-delay: 0s; }
+        .slot:nth-child(2) .event-emoji { animation-delay: 0.2s; }
+        .slot:nth-child(3) .event-emoji { animation-delay: 0.4s; }
+
+        /* --- 10種新動畫 --- */
+        #event-overlay { pointer-events: none; } /* 讓動畫層不阻擋點擊 */
+
+        @keyframes anim-run-fullscreen { /* 全螢幕小人亂跑 */
+            0% { transform: translate(-50vw, -50vh) scaleX(1); }
+            25% { transform: translate(50vw, -30vh) scaleX(-1); }
+            50% { transform: translate(50vw, 50vh) scaleX(-1); }
+            75% { transform: translate(-50vw, 30vh) scaleX(1); }
+            100% { transform: translate(-50vw, -50vh) scaleX(1); }
+        }
+        .event-run-fullscreen { animation: anim-run-fullscreen 2s linear infinite; }
+
+
+        @keyframes anim-hack {
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-5px, -5px); }
+            20% { transform: translate(5px, 5px); }
+            30% { transform: translate(-5px, 5px); }
+            40% { transform: translate(5px, -5px); }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .event-hack { animation: anim-hack 0.2s linear infinite; }
+
+        @keyframes anim-ufo {
+            0% { transform: translate(-60vw, -40vh) rotate(-30deg); }
+            100% { transform: translate(60vw, 40vh) rotate(30deg); }
+        }
+        .event-ufo { animation: anim-ufo 3s linear forwards; }
+
+        @keyframes anim-wind {
+            0% { transform: translateX(-100px) rotate(0deg); }
+            50% { transform: translateX(100px) rotate(180deg); }
+            100% { transform: translateX(-100px) rotate(360deg); }
+        }
+        .event-wind { animation: anim-wind 1.5s ease-in-out infinite; }
+        
+        @keyframes anim-robot {
+            0% { opacity: 0; }
+            49% { opacity: 0; }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 1; }
+        }
+        .event-robot { animation: anim-robot 0.5s ease-in-out infinite; }
+        
+        @keyframes anim-bomb {
+            0% { transform: scale(0.5); opacity: 0.5; }
+            70% { transform: scale(50); opacity: 1; }
+            100% { transform: scale(50); opacity: 0; }
+        }
+        .event-bomb { animation: anim-bomb 2.8s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
+        /* 炸彈閃光 */
+        .event-bomb::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: white;
+            opacity: 0;
+            animation: anim-bomb-flash 2.8s ease-out forwards;
+        }
+        @keyframes anim-bomb-flash {
+            65% { opacity: 0; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        @keyframes anim-lightning {
+            0%, 100% { opacity: 1; transform: scale(1.2); }
+            50% { opacity: 0.2; transform: scale(1); }
+        }
+        .event-lightning { animation: anim-lightning 0.3s ease infinite; }
+
+        @keyframes anim-swirl {
+            0% { transform: rotate(0deg) scale(0.8); }
+            100% { transform: rotate(1080deg) scale(1.5); }
+        }
+        .event-swirl { animation: anim-swirl 2s linear infinite; }
+        
+        @keyframes anim-money {
+            0% { transform: translateY(-50vh); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(50vh); opacity: 0; }
+        }
+        .event-money { animation: anim-money 1.5s ease-out infinite; }
+
+        /* --- 新增的 Emoji 搗蛋動畫 --- */
+        .chaos-emoji {
+            position: absolute;
+            font-size: 2.5rem; /* Emoji 大小 */
+            opacity: 0;
+            animation: anim-emoji-bounce 3s ease-out forwards;
+            z-index: 20;
+            will-change: transform, opacity;
+        }
+        @keyframes anim-emoji-bounce {
+            0% { opacity: 0; transform: translate(0, 50px) scale(0.5); }
+            20% { opacity: 1; transform: translate(-20px, -30px) scale(1.2) rotate(30deg); }
+            40% { opacity: 1; transform: translate(20px, -40px) scale(1) rotate(-20deg); }
+            60% { opacity: 1; transform: translate(-10px, -20px) scale(1.1) rotate(10deg); }
+            80% { opacity: 1; transform: translate(15px, -35px) scale(1) rotate(-5deg); }
+            98% { opacity: 1; }
+            100% { opacity: 0; transform: translate(0, -100px) scale(0.5) rotate(0deg); }
+        }
+
     </style>
 </head>
 <body class="bg-gray-900 flex items-center justify-center min-h-screen">
@@ -97,31 +239,61 @@
             <div id="slot3" class="slot">?</div>
         </div>
 
-        <div id="result-display" class="text-center mb-2">
-        </div>
-
-        <!-- 進度條區域 (已移除) -->
+        <div id="result-display" class="text-center mb-2" style="min-height: 120px;">
+            <!-- 突發事件的文字將顯示在這裡 --></div>
 
         <div class="text-center mt-4">
             <button id="spinButton" class="spin-button">開始抽獎</button>
         </div>
+
+        <!-- 全螢幕動畫遮罩層 (已移到 body 層級) -->
     </div>
 
+    <!-- 全螢幕動畫遮罩層 (移到這裡，並改為 fixed) -->
+    <div id="event-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center text-center p-4 hidden z-50 overflow-hidden">
+        <div id="event-icon" class="text-9xl relative"></div> <!-- 圖標放大 -->
+        <h2 id="event-text" class="text-4xl font-bold text-red-400 mt-6"></h2>
+        <p id="event-subtext" class="text-yellow-300 text-2xl mt-3"></p>
+    </div>
+
+
     <script>
-        const names = [
+        const initialNames = [
             "張迦森", "梁佑豪", "蕭博升", "楊凡萱", "陳芷薰",
             "楊璦菲", "楊瑜熙", "葉宥榛", "葉宸杋", "陳妍熙"
+        ];
+        // 複製一份作為可變動的目前名單
+        let names = [...initialNames];
+        // 複製一份作為「最後一人」事件觸發時的抽獎池
+        const masterNameList = [...initialNames];
+        
+        // 10種突發事件 (更新動畫)
+        const events = [
+            { icon: "🏃", text: "小人亂跑！結果被換掉了！", animation: "event-run-fullscreen" }, // <-- 更新動畫
+            { icon: "💻", text: "駭客入侵！系統重選！", animation: "event-hack" },
+            { icon: "🛸", text: "UFO 飛過，命運被改變了！", animation: "event-ufo" },
+            { icon: "💨", text: "一陣怪風吹走了結果！", animation: "event-wind" },
+            { icon: "🤪", text: "Emoji 搗蛋！結果被換掉了！", animation: "event-emoji-chaos" }, // <-- 新事件
+            { icon: "🤖", text: "AI 覺醒！它有自己的想法... ", animation: "event-robot" },
+            { icon: "💣", text: "糟糕！炸彈！結果飛了！", animation: "event-bomb" },
+            { icon: "⚡", text: "一道閃電劈中拉霸機！", animation: "event-lightning" },
+            { icon: "🌀", text: "時空漩渦！命運重置！", animation: "event-swirl" },
+            { icon: "💸", text: "有人灑錢！結果被買通了！", animation: "event-money" }
         ];
 
         const spinButton = document.getElementById('spinButton');
         const slots = [document.getElementById('slot1'), document.getElementById('slot2'), document.getElementById('slot3')];
         const resultDisplay = document.getElementById('result-display');
         const namelistDiv = document.getElementById('namelist');
-        /* timer 相關變數已移除 */
+        
+        // 取得動畫遮罩層的元素
+        const eventOverlay = document.getElementById('event-overlay');
+        const eventIcon = document.getElementById('event-icon');
+        const eventText = document.getElementById('event-text');
+        const eventSubtext = document.getElementById('event-subtext');
 
-        const allChars = [...new Set(names.join(''))];
+        const allChars = [...new Set(masterNameList.join(''))];
         let spinningIntervals = [];
-        /* timer 相關變數已移除 */
 
         function initializeNamelist() {
             namelistDiv.innerHTML = '';
@@ -156,48 +328,152 @@
             });
         }
         
-        /* stopTimer 函數已移除 */
+        // 重新設計的 spin 函數，回傳一個 Promise
+        function runSpin(winnerName, baseSpinTime) {
+            return new Promise(resolve => {
+                const chars = winnerName.split('');
+                slots.forEach((slot, index) => {
+                    spinningIntervals[index] = startSpinning(slot);
+                });
 
-        /* startTimer 函數已移除 */
+                let lastStop = 0;
+                chars.forEach((char, index) => {
+                    const stopDelay = baseSpinTime + index * 1000;
+                    setTimeout(() => {
+                        stopSpinning(slots[index], char, spinningIntervals[index]);
+                    }, stopDelay);
+                    lastStop = stopDelay;
+                });
 
-        /* timer 按鈕事件監聽器已移除 */
+                // 解析 Promise，在最後一個字停止後
+                setTimeout(resolve, lastStop + 500); // 500ms 緩衝
+            });
+        }
 
-        spinButton.addEventListener('click', () => {
+        // 使用 async/await 讓邏輯更清晰
+        spinButton.addEventListener('click', async () => {
             if (names.length === 0) {
-                resultDisplay.innerHTML = `<p class="text-xl font-bold text-red-500">名單已空！</p>`;
+                // 如果名單空了，提供一個重置選項
+                resultDisplay.innerHTML = `
+                    <p class="text-xl font-bold text-red-500">名單已空！</p>
+                    <button id="reset-list-button" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">重新載入名單</button>
+                `;
+                document.getElementById('reset-list-button').addEventListener('click', () => {
+                    names = [...masterNameList];
+                    initializeNamelist();
+                    resultDisplay.innerHTML = '';
+                });
                 return;
             }
 
             spinButton.disabled = true;
-            resultDisplay.innerHTML = ''; // 確保結果區域是空的
-            /* timerContainer.classList.add('hidden'); (已移除) */
-
+            resultDisplay.innerHTML = '';
             spinningIntervals.forEach(clearInterval);
             spinningIntervals = [];
 
-            const winnerIndex = Math.floor(Math.random() * names.length);
-            const winnerName = names[winnerIndex];
+            // 1. 抽出第一位 "可能的" 中獎者
+            const firstWinnerIndex = Math.floor(Math.random() * names.length);
+            const firstWinnerName = names[firstWinnerIndex];
+            
+            // 等待第一次轉動動畫跑完
+            await runSpin(firstWinnerName, 1500);
 
-            slots.forEach((slot, index) => {
-                spinningIntervals[index] = startSpinning(slot);
-            });
+            let finalWinnerIndex; // 最終要從 'names' 陣列中移除的索引
+            let finalWinnerName;  // 最終顯示的名字
+            let newWinnerIndexInNames = firstWinnerIndex; // 預設
 
-            winnerName.split('').forEach((char, index) => {
-                setTimeout(() => {
-                    stopSpinning(slots[index], char, spinningIntervals[index]);
-                }, 1500 + index * 1000);
-            });
-
-            setTimeout(() => {
-                // 不再顯示中獎者姓名
-                spinButton.disabled = false;
+            // 2. 命運的抉擇... 50% 機率
+            if (Math.random() < 0.5) { 
+                // 觸發突發事件！
+                const randomEvent = events[Math.floor(Math.random() * events.length)];
                 
-                names.splice(winnerIndex, 1);
-                initializeNamelist();
-                
-                /* startTimer(); (已移除) */
+                // 3. 決定新的中獎者 (先決定好)
+                if (names.length > 1) {
+                    while (newWinnerIndexInNames === firstWinnerIndex) {
+                        newWinnerIndexInNames = Math.floor(Math.random() * names.length);
+                    }
+                    finalWinnerName = names[newWinnerIndexInNames];
+                    finalWinnerIndex = newWinnerIndexInNames;
+                } else {
+                    let tempWinner = firstWinnerName;
+                    while (tempWinner === firstWinnerName) {
+                        tempWinner = masterNameList[Math.floor(Math.random() * masterNameList.length)];
+                    }
+                    finalWinnerName = tempWinner;
+                    finalWinnerIndex = firstWinnerIndex; 
+                }
 
-            }, 1500 + (winnerName.length - 1) * 1000 + 500);
+                // 4. 根據事件類型執行不同動畫
+                if (randomEvent.animation === "event-emoji-chaos") {
+                    // --- 特殊事件：Emoji 搗蛋 (無遮罩) ---
+                    resultDisplay.innerHTML = `
+                        <h2 class="text-2xl font-bold text-red-400">${randomEvent.text}</h2>
+                        <p class="text-yellow-300 text-lg mt-2">...結果正在改變...</p>
+                    `;
+                    
+                    const chaosEmojis = ["🏃", "💣", "⚡", "🛸", "🌀", "💸", "🤖", "✨", "💨", "💻", "🤪", "👻"];
+                    slots.forEach(slot => {
+                        // Ghat 每個 slot 產生 4-6 個 emoji
+                        for (let i = 0; i < Math.floor(Math.random() * 3) + 4; i++) {
+                            const emojiSpan = document.createElement('span');
+                            emojiSpan.classList.add('chaos-emoji');
+                            emojiSpan.textContent = chaosEmojis[Math.floor(Math.random() * chaosEmojis.length)];
+                            // 隨機初始位置
+                            emojiSpan.style.left = `${Math.random() * 80 + 10}%`; // 10% to 90%
+                            emojiSpan.style.animationDelay = `${Math.random() * 0.5}s`;
+                            slot.appendChild(emojiSpan);
+                        }
+                    });
+
+                    // 等待 3 秒動畫
+                    await new Promise(r => setTimeout(r, 3000));
+
+                    // 清理
+                    slots.forEach(slot => {
+                        slot.querySelectorAll('.chaos-emoji').forEach(e => e.remove());
+                    });
+                    resultDisplay.innerHTML = '';
+
+                } else {
+                    // --- 標準事件：全螢幕遮罩 ---
+                    eventIcon.textContent = randomEvent.icon;
+                    eventIcon.className = 'text-9xl relative ' + randomEvent.animation; // 應用獨特動畫
+                    eventText.textContent = randomEvent.text;
+                    eventSubtext.textContent = "...結果正在改變...";
+                    eventOverlay.classList.remove('hidden');
+
+                    // 等待 3 秒鐘讓大家看動畫
+                    await new Promise(r => setTimeout(r, 3000));
+
+                    // 隱藏動畫
+                    eventOverlay.classList.add('hidden');
+                    eventIcon.className = 'text-9xl relative'; // 重置動畫
+                }
+                
+                // 5. 直接顯示新結果 (Slam 特效)
+                const newChars = finalWinnerName.split('');
+                slots.forEach((slot, index) => {
+                    const char = newChars[index] || ' ';
+                    slot.textContent = char;
+                    slot.style.transform = 'scale(1)';
+                    slot.animate([
+                        { transform: 'scale(1.5)', color: '#ffffff', textShadow: '0 0 10px #fff' },
+                        { transform: 'scale(1)', color: '#f1c40f', textShadow: '0 0 5px #f1c40f, 0 0 10px #f1c40f, 0 0 20px #f39c12' }
+                    ], {
+                        duration: 400,
+                        easing: 'ease-out'
+                    });
+                });
+
+            } else {
+                // 沒觸發事件，正常結束
+                finalWinnerIndex = firstWinnerIndex;
+            }
+            
+            // 6. 收尾 (移除最終確定的中獎者)
+            names.splice(finalWinnerIndex, 1);
+            initializeNamelist();
+            spinButton.disabled = false;
         });
     </script>
 </body>
